@@ -4,11 +4,15 @@ from streamlit_folium import st_folium
 
 st.set_page_config(page_title="Utilities Reliability Map", layout="wide")
 
-# --- PASSWORD ---
-PASSWORD = st.secrets["APP_PASSWORD"]   # set this in Streamlit Secrets
+# --- PASSWORD (tolerant) ---
+PASSWORD = st.secrets.get("APP_PASSWORD")  # None if not set
 entered = st.text_input("Enter password:", type="password")
-if entered != PASSWORD:
-    st.stop()
+
+if PASSWORD:  # secret configured
+    if entered != PASSWORD:
+        st.stop()
+else:
+    st.info("No password is configured yet. Set APP_PASSWORD in Secrets to enable protection.")
 
 # --- LOAD GEOJSON ---
 with open("utilities_state_level_reliability_flag.geojson", "r") as f:
@@ -19,12 +23,8 @@ m = folium.Map(location=[39.5, -98.35], zoom_start=4, tiles="cartodbpositron")
 
 def style_fn(feat):
     flag = feat["properties"].get("ReportFlag", "No")
-    return {
-        "fillColor": "green" if flag == "Yes" else "red",
-        "color": "black",
-        "weight": 0.3,
-        "fillOpacity": 0.6,
-    }
+    return {"fillColor": "green" if flag == "Yes" else "red",
+            "color": "black", "weight": 0.3, "fillOpacity": 0.6}
 
 folium.GeoJson(
     geojson_data,
@@ -36,5 +36,3 @@ folium.GeoJson(
 ).add_to(m)
 
 st_folium(m, width=None, height=600)
-
-
